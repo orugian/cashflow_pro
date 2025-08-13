@@ -17,13 +17,13 @@ const Routes = () => {
       <ScrollToTop />
       <RouterRoutes>
         {/* Define your route here */}
-        <Route path="/" element={<AnalyticsForecasting />} />
+        <Route path="/" element={<OverviewDashboard />} />
+        <Route path="/overview-dashboard" element={<OverviewDashboard />} />
         <Route path="/reports-center" element={<ReportsCenter />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/transaction-management" element={<TransactionManagement />} />
         <Route path="/analytics-forecasting" element={<AnalyticsForecasting />} />
         <Route path="/company-account-settings" element={<CompanyAccountSettings />} />
-        <Route path="/overview-dashboard" element={<OverviewDashboard />} />
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>
       </ErrorBoundary>

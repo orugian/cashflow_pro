@@ -1,230 +1,156 @@
-import React, { useState, useRef, useEffect } from 'react';
-import Icon from '../AppIcon';
+import React, { useState } from 'react';
+import { ChevronDown, Building2, Globe, Plus } from 'lucide-react';
+import useStore from '../../state/store';
 
-const CompanySwitcher = () => {
+const CompanySwitcher = ({ className = '' }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState(null);
-  const dropdownRef = useRef(null);
-
-  // Mock company data - in real app this would come from context/API
-  const companies = [
-    {
-      id: '1',
-      name: 'Tech Solutions Ltda',
-      cnpj: '12.345.678/0001-90',
-      status: 'active',
-      role: 'admin'
-    },
-    {
-      id: '2',
-      name: 'Consultoria Digital ME',
-      cnpj: '98.765.432/0001-10',
-      status: 'active',
-      role: 'viewer'
-    },
-    {
-      id: '3',
-      name: 'Inovação Empresarial SA',
-      cnpj: '11.222.333/0001-44',
-      status: 'pending',
-      role: 'admin'
-    }
-  ];
-
-  // Set default selected company
-  useEffect(() => {
-    if (!selectedCompany && companies?.length > 0) {
-      setSelectedCompany(companies?.[0]);
-    }
-  }, [selectedCompany, companies]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef?.current && !dropdownRef?.current?.contains(event?.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  const handleCompanySelect = (company) => {
-    setSelectedCompany(company);
+  
+  const { 
+    companies, 
+    currentCompanyId, 
+    globalView,
+    setCurrentCompany, 
+    toggleGlobalView,
+    canPerformAction
+  } = useStore();
+  
+  const currentCompany = companies?.find(c => c?.id === currentCompanyId);
+  
+  const handleCompanySelect = (companyId) => {
+    setCurrentCompany(companyId);
     setIsOpen(false);
-    // In real app, this would update global context and trigger data refresh
   };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active':
-        return 'text-success';
-      case 'pending':
-        return 'text-warning';
-      case 'inactive':
-        return 'text-error';
-      default:
-        return 'text-muted-foreground';
-    }
+  
+  const handleGlobalViewToggle = () => {
+    toggleGlobalView();
+    setIsOpen(false);
   };
-
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case 'active':
-        return 'Ativa';
-      case 'pending':
-        return 'Pendente';
-      case 'inactive':
-        return 'Inativa';
-      default:
-        return 'Desconhecido';
-    }
+  
+  const handleAddCompany = () => {
+    // This would trigger a modal or navigation to add company form
+    setIsOpen(false);
+    // For now, just log
+    console.log('Add new company functionality');
   };
-
-  if (!selectedCompany) {
-    return (
-      <div className="flex items-center space-x-2 px-3 py-2 bg-muted rounded-lg">
-        <div className="w-4 h-4 bg-muted-foreground/20 rounded animate-pulse"></div>
-        <div className="w-32 h-4 bg-muted-foreground/20 rounded animate-pulse"></div>
-      </div>
-    );
-  }
-
+  
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className={`relative ${className}`}>
+      {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`
-          flex items-center space-x-3 px-3 py-2 rounded-lg
-          transition-all duration-200 ease-smooth
-          hover:bg-muted hover-elevation
-          ${isOpen ? 'bg-muted shadow-medium' : 'bg-transparent'}
-          border border-transparent hover:border-border
+          flex items-center space-x-2 px-3 py-2 rounded-lg
+          bg-card border border-border
+          text-foreground text-sm font-medium
+          hover:bg-muted transition-colors
+          focus:outline-none focus:ring-2 focus:ring-ring
+          min-w-[180px] justify-between
         `}
       >
-        {/* Company Avatar */}
-        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-          <Icon name="Building2" size={16} color="var(--color-primary)" />
+        <div className="flex items-center space-x-2">
+          {globalView ? (
+            <>
+              <Globe className="h-4 w-4 text-primary" />
+              <span>Carteira Global</span>
+            </>
+          ) : currentCompany ? (
+            <>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <div className="text-left">
+                <div className="text-sm font-medium">{currentCompany?.nomeFantasia}</div>
+                <div className="text-xs text-muted-foreground">
+                  {currentCompany?.cnpj?.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <span>Selecionar Empresa</span>
+            </>
+          )}
         </div>
-
-        {/* Company Info */}
-        <div className="flex flex-col items-start min-w-0">
-          <div className="flex items-center space-x-2">
-            <span className="font-medium text-sm text-foreground truncate max-w-32">
-              {selectedCompany?.name}
-            </span>
-            <div className={`w-2 h-2 rounded-full ${getStatusColor(selectedCompany?.status)?.replace('text-', 'bg-')}`}></div>
-          </div>
-          <span className="text-xs text-muted-foreground font-mono">
-            {selectedCompany?.cnpj}
-          </span>
-        </div>
-
-        {/* Dropdown Arrow */}
-        <Icon 
-          name={isOpen ? "ChevronUp" : "ChevronDown"} 
-          size={16} 
-          color="var(--color-text-secondary)" 
-          className="transition-transform duration-200"
+        <ChevronDown 
+          className={`h-4 w-4 text-muted-foreground transition-transform ${
+            isOpen ? 'rotate-180' : ''
+          }`} 
         />
       </button>
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="
-          absolute top-full left-0 mt-2 w-80
-          bg-popover border border-border rounded-lg shadow-pronounced
-          py-2 z-200
-          max-h-96 overflow-y-auto
-        ">
-          {/* Header */}
-          <div className="px-4 py-2 border-b border-border">
-            <h3 className="font-medium text-sm text-popover-foreground">
-              Selecionar Empresa
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              {companies?.length} empresa{companies?.length !== 1 ? 's' : ''} disponível{companies?.length !== 1 ? 'is' : ''}
-            </p>
-          </div>
-
-          {/* Company List */}
-          <div className="py-2">
-            {companies?.map((company) => {
-              const isSelected = selectedCompany?.id === company?.id;
-              
-              return (
+        <div className="absolute top-full left-0 mt-1 w-full min-w-[280px] z-50">
+          <div className="bg-popover border border-border rounded-lg shadow-lg">
+            {/* Global View Option */}
+            <button
+              onClick={handleGlobalViewToggle}
+              className={`
+                w-full flex items-center space-x-2 px-3 py-2 text-left
+                hover:bg-muted transition-colors
+                ${globalView ? 'bg-primary/10 text-primary' : 'text-popover-foreground'}
+                border-b border-border
+              `}
+            >
+              <Globe className="h-4 w-4" />
+              <div>
+                <div className="font-medium">Carteira Global</div>
+                <div className="text-xs text-muted-foreground">
+                  Visão consolidada de todas as empresas
+                </div>
+              </div>
+            </button>
+            
+            {/* Company List */}
+            <div className="py-1">
+              {companies?.filter(c => c?.active)?.map((company) => (
                 <button
                   key={company?.id}
-                  onClick={() => handleCompanySelect(company)}
+                  onClick={() => handleCompanySelect(company?.id)}
                   className={`
-                    w-full flex items-center space-x-3 px-4 py-3
-                    transition-colors duration-200
-                    hover:bg-muted
-                    ${isSelected ? 'bg-primary/5 border-r-2 border-r-primary' : ''}
+                    w-full flex items-center space-x-2 px-3 py-2 text-left
+                    hover:bg-muted transition-colors
+                    ${currentCompanyId === company?.id && !globalView ? 
+                      'bg-primary/10 text-primary' : 'text-popover-foreground'}
                   `}
                 >
-                  {/* Company Avatar */}
-                  <div className={`
-                    w-10 h-10 rounded-lg flex items-center justify-center
-                    ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted'}
-                  `}>
-                    <Icon 
-                      name="Building2" 
-                      size={18} 
-                      color={isSelected ? 'currentColor' : 'var(--color-text-secondary)'} 
-                    />
-                  </div>
-                  {/* Company Details */}
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center space-x-2">
-                      <span className={`
-                        font-medium text-sm truncate
-                        ${isSelected ? 'text-primary' : 'text-popover-foreground'}
-                      `}>
-                        {company?.name}
-                      </span>
-                      <div className={`w-2 h-2 rounded-full ${getStatusColor(company?.status)?.replace('text-', 'bg-')}`}></div>
+                  <Building2 className="h-4 w-4" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{company?.nomeFantasia}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {company?.razaoSocial}
                     </div>
-                    
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className="text-xs text-muted-foreground font-mono">
-                        {company?.cnpj}
-                      </span>
-                      <span className="text-xs px-2 py-0.5 bg-muted rounded-full">
-                        {company?.role === 'admin' ? 'Admin' : 'Visualizador'}
-                      </span>
+                    <div className="text-xs text-muted-foreground">
+                      {company?.cnpj?.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')}
                     </div>
-                    
-                    <span className={`text-xs ${getStatusColor(company?.status)}`}>
-                      {getStatusLabel(company?.status)}
-                    </span>
                   </div>
-                  {/* Selected Indicator */}
-                  {isSelected && (
-                    <Icon name="Check" size={16} color="var(--color-primary)" />
-                  )}
                 </button>
-              );
-            })}
-          </div>
-
-          {/* Footer */}
-          <div className="px-4 py-2 border-t border-border">
-            <button className="
-              w-full flex items-center justify-center space-x-2 px-3 py-2
-              text-sm text-primary hover:text-primary/80
-              transition-colors duration-200
-            ">
-              <Icon name="Plus" size={16} />
-              <span>Adicionar Nova Empresa</span>
-            </button>
+              ))}
+            </div>
+            
+            {/* Add Company Option */}
+            {canPerformAction('create') && (
+              <div className="border-t border-border pt-1">
+                <button
+                  onClick={handleAddCompany}
+                  className="
+                    w-full flex items-center space-x-2 px-3 py-2 text-left
+                    hover:bg-muted transition-colors
+                    text-muted-foreground hover:text-foreground
+                  "
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="text-sm">Adicionar Empresa</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
+      )}
+      {/* Overlay to close dropdown */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setIsOpen(false)}
+        />
       )}
     </div>
   );

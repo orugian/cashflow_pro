@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    /* Core Colors */
+    /* Core Colors - Light Theme */
     --color-background: #FAFAFA; /* warm off-white */
     --color-foreground: #111827; /* near-black with warmth */
     --color-border: #E5E7EB; /* light gray */
@@ -64,6 +64,63 @@
     --radius: 0.5rem;
   }
 
+  /* Dark Theme */
+  :root.dark {
+    /* Core Colors - Dark Theme */
+    --color-background: #0F172A; /* deep slate */
+    --color-foreground: #F8FAFC; /* off-white */
+    --color-border: #334155; /* slate border */
+    --color-input: #1E293B; /* dark slate input */
+    --color-ring: #3B82F6; /* blue ring */
+    
+    /* Card Colors */
+    --color-card: #1E293B; /* dark slate card */
+    --color-card-foreground: #F8FAFC; /* off-white text */
+    
+    /* Popover Colors */
+    --color-popover: #1E293B; /* dark slate */
+    --color-popover-foreground: #F8FAFC; /* off-white text */
+    
+    /* Muted Colors */
+    --color-muted: #334155; /* muted slate */
+    --color-muted-foreground: #94A3B8; /* light slate */
+    
+    /* Primary Colors */
+    --color-primary: #3B82F6; /* blue primary */
+    --color-primary-foreground: #F8FAFC; /* white text */
+    
+    /* Secondary Colors */
+    --color-secondary: #14B8A6; /* teal secondary */
+    --color-secondary-foreground: #F8FAFC; /* white text */
+    
+    /* Destructive Colors */
+    --color-destructive: #EF4444; /* red destructive */
+    --color-destructive-foreground: #F8FAFC; /* white text */
+    
+    /* Accent Colors */
+    --color-accent: #F59E0B; /* amber accent */
+    --color-accent-foreground: #0F172A; /* dark text */
+    
+    /* Success Colors */
+    --color-success: #10B981; /* green success */
+    --color-success-foreground: #F8FAFC; /* white text */
+    
+    /* Warning Colors */
+    --color-warning: #F59E0B; /* amber warning */
+    --color-warning-foreground: #0F172A; /* dark text */
+    
+    /* Error Colors */
+    --color-error: #EF4444; /* red error */
+    --color-error-foreground: #F8FAFC; /* white text */
+    
+    /* Surface Color */
+    --color-surface: #1E293B; /* dark slate surface */
+    
+    /* Text Colors */
+    --color-text-primary: #F8FAFC; /* off-white */
+    --color-text-secondary: #94A3B8; /* light slate */
+  }
+
   * {
     @apply border-border;
   }
@@ -72,6 +129,33 @@
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
   }
+  
+  body.compact {
+    /* Compact density styles */
+    --spacing-unit: 0.75;
+  }
+  
+  body.comfortable {
+    /* Comfortable density styles */
+    --spacing-unit: 1.25;
+  }
+  
+  body.high-contrast {
+    /* High contrast accessibility */
+    --color-border: #000000;
+    --color-foreground: #000000;
+    --color-background: #FFFFFF;
+  }
+  
+  body.large-text {
+    font-size: 1.125rem;
+  }
+  
+  body.large-text h1 { font-size: 2.5rem; }
+  body.large-text h2 { font-size: 2rem; }
+  body.large-text h3 { font-size: 1.75rem; }
+  body.large-text .text-sm { font-size: 1rem; }
+  body.large-text .text-xs { font-size: 0.875rem; }
   
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', sans-serif;
@@ -122,5 +206,78 @@
   
   .pulse-feedback:active {
     transform: scale(1.02);
+  }
+  
+  /* Theme transition */
+  .theme-transition {
+    transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *:before, *:after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .transition-smooth,
+  .transition-medium,
+  .hover-elevation,
+  .pulse-feedback,
+  .theme-transition {
+    transition: none !important;
+  }
+}
+
+body.reduced-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Print styles */
+@media print {
+  body {
+    color: black !important;
+    background: white !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted-foreground);
+}
+
+/* Focus styles for accessibility */
+.focus-visible:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-border: #000000;
+    --color-muted: #F0F0F0;
   }
 }
