@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import NavigationSidebar from '../../components/ui/NavigationSidebar';
 import Header from '../../components/ui/Header';
 import KPICard from './components/KPICard';
@@ -10,18 +11,41 @@ import TopVendorsCard from './components/TopVendorsCard';
 import BudgetAdherenceCard from './components/BudgetAdherenceCard';
 import TaxEstimateCard from './components/TaxEstimateCard';
 import QuickActionButton from './components/QuickActionButton';
+import DonutBalanceCard from './components/DonutBalanceCard';
+import { 
+  selectConsolidatedKPIs, 
+  selectScopedAccounts, 
+  selectActiveScope,
+  selectScopedTransactions,
+} from '../../store/selectors';
+
 
 const OverviewDashboard = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Mock KPI data
+  // Redux selectors
+  const kpis = useSelector(selectConsolidatedKPIs);
+  const scopedAccounts = useSelector(selectScopedAccounts);
+  const scopedTransactions = useSelector(selectScopedTransactions);
+  const activeScope = useSelector(selectActiveScope);
+
+  // Format currency
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    })?.format(value);
+  };
+
+  // KPI data based on Redux state
   const kpiData = [
     {
       title: 'Saldo Bruto',
-      value: 'R$ 127.450,75',
-      subtitle: 'Todas as contas',
+      value: formatCurrency(kpis?.totalBalance || 0),
+      subtitle: activeScope === 'global' ? 'Todas as empresas' : 'Empresa atual',
       change: '+12,3%',
       changeType: 'positive',
       icon: 'Wallet',
@@ -29,16 +53,16 @@ const OverviewDashboard = () => {
     },
     {
       title: 'Entradas vs Saídas',
-      value: 'R$ +15.420',
-      subtitle: 'Agosto 2025',
+      value: formatCurrency(kpis?.netCashFlow || 0),
+      subtitle: 'Período atual',
       change: '+8,7%',
-      changeType: 'positive',
+      changeType: kpis?.netCashFlow >= 0 ? 'positive' : 'negative',
       icon: 'TrendingUp',
       onClick: () => navigate('/analytics-forecasting')
     },
     {
       title: 'Fluxo de Caixa Líquido',
-      value: 'R$ 85.320,50',
+      value: formatCurrency(kpis?.totalBalance || 0),
       subtitle: 'Posição atual',
       change: '+5,2%',
       changeType: 'positive',
@@ -47,7 +71,7 @@ const OverviewDashboard = () => {
     },
     {
       title: 'Runway (Meses)',
-      value: '18,5 meses',
+      value: kpis?.runway === Infinity ? '∞' : `${Math.round(kpis?.runway || 0)} meses`,
       subtitle: 'Com gastos atuais',
       change: '+2,1 meses',
       changeType: 'positive',
@@ -56,7 +80,7 @@ const OverviewDashboard = () => {
     },
     {
       title: 'Taxa de Queima',
-      value: 'R$ 4.620/mês',
+      value: formatCurrency(kpis?.burnRate || 0) + '/mês',
       subtitle: 'Média últimos 3 meses',
       change: '-3,8%',
       changeType: 'positive',
@@ -64,6 +88,13 @@ const OverviewDashboard = () => {
       onClick: () => navigate('/analytics-forecasting')
     }
   ];
+
+  // Generate system alerts on load and data changes
+  useEffect(() => {
+    // Generate alerts based on current data
+    // This would normally be called periodically or on data changes
+    // For now, we'll skip this to avoid complexity
+  }, [dispatch, scopedAccounts, scopedTransactions]);
 
   // Simulate loading
   useEffect(() => {
@@ -85,11 +116,13 @@ const OverviewDashboard = () => {
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={handleToggleSidebar}
       />
+      
       {/* Header */}
       <Header 
         sidebarCollapsed={sidebarCollapsed}
         onToggleSidebar={handleToggleSidebar}
       />
+      
       {/* Main Content */}
       <main className={`
         transition-all duration-300 ease-smooth
@@ -103,7 +136,8 @@ const OverviewDashboard = () => {
               Dashboard Financeiro
             </h1>
             <p className="text-muted-foreground">
-              Visão geral consolidada do fluxo de caixa e indicadores financeiros
+              {activeScope === 'global' ?'Visão consolidada do fluxo de caixa de todas as empresas' :'Visão geral do fluxo de caixa e indicadores financeiros'
+              }
             </p>
           </div>
 
@@ -127,8 +161,13 @@ const OverviewDashboard = () => {
           {/* Main Chart and Alerts */}
           <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             {/* Projected Balance Chart */}
-            <div className="xl:col-span-3">
+            <div className="xl:col-span-2">
               <ProjectedBalanceChart />
+            </div>
+
+            {/* Donut Balance Chart */}
+            <div className="xl:col-span-1">
+              <DonutBalanceCard />
             </div>
 
             {/* Alerts Panel */}
@@ -172,6 +211,7 @@ const OverviewDashboard = () => {
           <div className="h-20"></div>
         </div>
       </main>
+      
       {/* Quick Action Button */}
       <QuickActionButton />
     </div>

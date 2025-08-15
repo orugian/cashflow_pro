@@ -1,82 +1,80 @@
-import React, { useState } from 'react';
-import Icon from '../../../components/AppIcon';
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { X } from 'lucide-react';
+import { format } from 'date-fns';
+import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import Button from '../../../components/ui/Button';
+import { 
+  selectScopedAccounts, 
+  selectCategories, 
+  selectVendorsByCompany, 
+  selectCustomersByCompany,
+  selectCurrentUser,
+  selectActiveCompanyId,
+  selectCanEdit,
+} from '../../../store/selectors';
+import { 
+  addTransaction, 
+  createTransfer, 
+  editTransaction 
+} from '../../../store/slices/transactionsSlice';
 import { Checkbox } from '../../../components/ui/Checkbox';
+import Icon from '../../../components/AppIcon';
 
-const NewTransactionDrawer = ({ isOpen, onClose, onSave }) => {
+
+
+const NewTransactionDrawer = ({ 
+  isOpen, 
+  onClose, 
+  transaction = null,
+  mode = 'create' // 'create' | 'edit'
+}) => {
+  const dispatch = useDispatch();
+  const scopedAccounts = useSelector(selectScopedAccounts);
+  const categories = useSelector(selectCategories);
+  const currentUser = useSelector(selectCurrentUser);
+  const activeCompanyId = useSelector(selectActiveCompanyId);
+  const canEdit = useSelector(selectCanEdit);
+
   const [formData, setFormData] = useState({
-    company: 'tech-solutions',
-    account: '',
-    type: 'expense',
-    category: '',
-    vendor: '',
-    costCenter: '',
-    competenceDate: '',
-    dueDate: '',
-    paymentDate: '',
+    type: 'exit',
+    companyId: activeCompanyId,
+    accountId: '',
+    categoryId: '',
+    vendorId: '',
+    customerId: '',
+    competenciaDate: format(new Date(), 'yyyy-MM-dd'),
+    dueDate: format(new Date(), 'yyyy-MM-dd'),
     amount: '',
-    paymentMethod: '',
-    tags: '',
+    description: '',
+    paymentMethod: 'pix',
+    status: 'planned',
     notes: '',
+    tags: '',
+    attachments: [],
     isRecurring: false,
-    recurringFrequency: 'monthly',
-    attachments: []
+    recurringFrequency: '',
   });
 
+  const [transferData, setTransferData] = useState({
+    fromAccountId: '',
+    toAccountId: '',
+    amount: '',
+    description: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+  });
+
+  const [isTransfer, setIsTransfer] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const companyOptions = [
-    { value: 'tech-solutions', label: 'Tech Solutions Ltda (12.345.678/0001-90)' },
-    { value: 'consultoria-digital', label: 'Consultoria Digital ME (98.765.432/0001-10)' }
-  ];
+  const vendors = useSelector((state) => selectVendorsByCompany(state, activeCompanyId));
+  const customers = useSelector((state) => selectCustomersByCompany(state, activeCompanyId));
 
-  const accountOptions = [
-    { value: 'bb-checking', label: 'Banco do Brasil - Conta Corrente' },
-    { value: 'bb-savings', label: 'Banco do Brasil - Poupança' },
-    { value: 'itau-checking', label: 'Itaú - Conta Corrente' },
-    { value: 'cash', label: 'Dinheiro em Espécie' },
-    { value: 'credit-card', label: 'Cartão de Crédito Empresarial' }
-  ];
-
-  const categoryOptions = [
-    { value: 'revenue-services', label: '💰 Prestação de Serviços' },
-    { value: 'revenue-products', label: '💰 Venda de Produtos' },
-    { value: 'expenses-operational', label: '💸 Despesas Operacionais' },
-    { value: 'expenses-administrative', label: '💸 Despesas Administrativas' },
-    { value: 'expenses-marketing', label: '💸 Marketing e Publicidade' },
-    { value: 'expenses-utilities', label: '💸 Utilidades (Água, Luz, Internet)' },
-    { value: 'expenses-rent', label: '💸 Aluguel e Condomínio' },
-    { value: 'taxes-simples', label: '🏛️ Simples Nacional' },
-    { value: 'taxes-municipal', label: '🏛️ Impostos Municipais' }
-  ];
-
-  const paymentMethodOptions = [
-    { value: 'pix', label: 'PIX' },
-    { value: 'ted', label: 'TED' },
-    { value: 'boleto', label: 'Boleto' },
-    { value: 'credit-card', label: 'Cartão de Crédito' },
-    { value: 'debit-card', label: 'Cartão de Débito' },
-    { value: 'cash', label: 'Dinheiro' },
-    { value: 'check', label: 'Cheque' }
-  ];
-
-  const costCenterOptions = [
-    { value: 'administration', label: 'Administração' },
-    { value: 'sales', label: 'Vendas' },
-    { value: 'marketing', label: 'Marketing' },
-    { value: 'operations', label: 'Operações' },
-    { value: 'it', label: 'Tecnologia da Informação' }
-  ];
-
-  const recurringFrequencyOptions = [
-    { value: 'daily', label: 'Diário' },
-    { value: 'weekly', label: 'Semanal' },
-    { value: 'monthly', label: 'Mensal' },
-    { value: 'quarterly', label: 'Trimestral' },
-    { value: 'annually', label: 'Anual' }
-  ];
+  const handleClose = () => {
+    onClose();
+  };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -117,60 +115,117 @@ const NewTransactionDrawer = ({ isOpen, onClose, onSave }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData?.account) newErrors.account = 'Conta é obrigatória';
-    if (!formData?.category) newErrors.category = 'Categoria é obrigatória';
-    if (!formData?.vendor) newErrors.vendor = 'Fornecedor/Cliente é obrigatório';
-    if (!formData?.amount || parseFloat(formData?.amount) <= 0) {
-      newErrors.amount = 'Valor deve ser maior que zero';
+    if (isTransfer) {
+      if (!transferData?.fromAccountId) newErrors.fromAccountId = 'Conta de origem é obrigatória';
+      if (!transferData?.toAccountId) newErrors.toAccountId = 'Conta de destino é obrigatória';
+      if (transferData?.fromAccountId === transferData?.toAccountId) {
+        newErrors.toAccountId = 'Conta de destino deve ser diferente da origem';
+      }
+      if (!transferData?.amount || parseFloat(transferData?.amount) <= 0) {
+        newErrors.amount = 'Valor deve ser maior que zero';
+      }
+      if (!transferData?.date) newErrors.date = 'Data é obrigatória';
+    } else {
+      if (!formData?.accountId) newErrors.accountId = 'Conta é obrigatória';
+      if (!formData?.categoryId) newErrors.categoryId = 'Categoria é obrigatória';
+      if (!formData?.amount || parseFloat(formData?.amount) <= 0) {
+        newErrors.amount = 'Valor deve ser maior que zero';
+      }
+      if (!formData?.description?.trim()) newErrors.description = 'Descrição é obrigatória';
+      if (!formData?.dueDate) newErrors.dueDate = 'Data de vencimento é obrigatória';
     }
-    if (!formData?.competenceDate) newErrors.competenceDate = 'Data de competência é obrigatória';
-    if (!formData?.dueDate) newErrors.dueDate = 'Data de vencimento é obrigatória';
 
     setErrors(newErrors);
     return Object.keys(newErrors)?.length === 0;
   };
 
-  const handleSave = () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault();
+    
+    if (!canEdit) {
+      alert('Você não tem permissão para realizar esta ação');
+      return;
+    }
+
     if (!validateForm()) return;
 
-    const transactionData = {
-      ...formData,
-      id: Date.now()?.toString(),
-      createdAt: new Date()?.toISOString(),
-      status: 'planned'
-    };
+    setIsSubmitting(true);
 
-    onSave(transactionData);
-    handleClose();
-  };
+    try {
+      if (isTransfer) {
+        // Create transfer
+        dispatch(createTransfer({
+          companyId: activeCompanyId,
+          fromAccountId: transferData?.fromAccountId,
+          toAccountId: transferData?.toAccountId,
+          amount: parseFloat(transferData?.amount),
+          date: transferData?.date,
+          notes: transferData?.description,
+          currentUserId: currentUser?.id,
+        }));
+      } else if (mode === 'edit' && transaction) {
+        // Edit existing transaction
+        dispatch(editTransaction({
+          id: transaction?.id,
+          ...formData,
+          amount: parseFloat(formData?.amount),
+          tags: formData?.tags ? formData?.tags?.split(',')?.map(tag => tag?.trim()) : [],
+          currentUserId: currentUser?.id,
+        }));
+      } else {
+        // Create new transaction
+        dispatch(addTransaction({
+          ...formData,
+          amount: parseFloat(formData?.amount),
+          tags: formData?.tags ? formData?.tags?.split(',')?.map(tag => tag?.trim()) : [],
+          currentUserId: currentUser?.id,
+        }));
+      }
 
-  const handleClose = () => {
-    setFormData({
-      company: 'tech-solutions',
-      account: '',
-      type: 'expense',
-      category: '',
-      vendor: '',
-      costCenter: '',
-      competenceDate: '',
-      dueDate: '',
-      paymentDate: '',
-      amount: '',
-      paymentMethod: '',
-      tags: '',
-      notes: '',
-      isRecurring: false,
-      recurringFrequency: 'monthly',
-      attachments: []
-    });
-    setErrors({});
-    onClose();
+      onClose();
+      
+      // Reset form
+      setFormData({
+        type: 'exit',
+        companyId: activeCompanyId,
+        accountId: '',
+        categoryId: '',
+        vendorId: '',
+        customerId: '',
+        competenciaDate: format(new Date(), 'yyyy-MM-dd'),
+        dueDate: format(new Date(), 'yyyy-MM-dd'),
+        amount: '',
+        description: '',
+        paymentMethod: 'pix',
+        status: 'planned',
+        notes: '',
+        tags: '',
+        attachments: [],
+        isRecurring: false,
+        recurringFrequency: '',
+      });
+      setTransferData({
+        fromAccountId: '',
+        toAccountId: '',
+        amount: '',
+        description: '',
+        date: format(new Date(), 'yyyy-MM-dd'),
+      });
+      setIsTransfer(false);
+      setErrors({});
+
+    } catch (error) {
+      console.error('Error saving transaction:', error);
+      alert('Erro ao salvar transação. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-200 overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-background/80 backdrop-blur-sm"
@@ -204,8 +259,8 @@ const NewTransactionDrawer = ({ isOpen, onClose, onSave }) => {
           <Select
             label="Empresa"
             options={companyOptions}
-            value={formData?.company}
-            onChange={(value) => handleInputChange('company', value)}
+            value={formData?.companyId}
+            onChange={(value) => handleInputChange('companyId', value)}
             required
           />
 
@@ -214,9 +269,9 @@ const NewTransactionDrawer = ({ isOpen, onClose, onSave }) => {
             <Select
               label="Conta"
               options={accountOptions}
-              value={formData?.account}
-              onChange={(value) => handleInputChange('account', value)}
-              error={errors?.account}
+              value={formData?.accountId}
+              onChange={(value) => handleInputChange('accountId', value)}
+              error={errors?.accountId}
               required
             />
             
@@ -256,9 +311,9 @@ const NewTransactionDrawer = ({ isOpen, onClose, onSave }) => {
             <Select
               label="Categoria"
               options={categoryOptions}
-              value={formData?.category}
-              onChange={(value) => handleInputChange('category', value)}
-              error={errors?.category}
+              value={formData?.categoryId}
+              onChange={(value) => handleInputChange('categoryId', value)}
+              error={errors?.categoryId}
               searchable
               required
             />
@@ -267,9 +322,9 @@ const NewTransactionDrawer = ({ isOpen, onClose, onSave }) => {
               label="Fornecedor/Cliente"
               type="text"
               placeholder="Digite o nome..."
-              value={formData?.vendor}
-              onChange={(e) => handleInputChange('vendor', e?.target?.value)}
-              error={errors?.vendor}
+              value={formData?.vendorId}
+              onChange={(e) => handleInputChange('vendorId', e?.target?.value)}
+              error={errors?.vendorId}
               required
             />
           </div>
@@ -287,9 +342,9 @@ const NewTransactionDrawer = ({ isOpen, onClose, onSave }) => {
             <Input
               label="Data de Competência"
               type="date"
-              value={formData?.competenceDate}
-              onChange={(e) => handleInputChange('competenceDate', e?.target?.value)}
-              error={errors?.competenceDate}
+              value={formData?.competenciaDate}
+              onChange={(e) => handleInputChange('competenciaDate', e?.target?.value)}
+              error={errors?.competenciaDate}
               required
             />
             
@@ -440,7 +495,7 @@ const NewTransactionDrawer = ({ isOpen, onClose, onSave }) => {
             </Button>
             <Button
               variant="default"
-              onClick={handleSave}
+              onClick={handleSubmit}
               iconName="Save"
               iconPosition="left"
             >

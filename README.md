@@ -1,333 +1,262 @@
-# Cashflow Pro - Sistema de Gestão Financeira
+# CashFlow Pro
 
-Sistema completo de gestão financeira para pequenas e médias empresas, desenvolvido em React com foco na experiência do usuário e robustez operacional.
+Um sistema avançado de gestão financeira empresarial construído com React e Redux Toolkit, oferecendo controle completo sobre fluxo de caixa, transações e análises financeiras.
 
-## 🚀 Características Principais
+## Características Principais
 
-### Multi-Empresas & Carteira Global
-- **Suporte a múltiplas empresas** com 2 CNPJs configurados por padrão
-- **Carteira Global** para visão consolidada de todas as empresas
-- **Permissões granulares** entre Administrador e Visualizador
-- **Switching dinâmico** entre empresas sem recarregar a página
+- **Gestão Multi-empresa**: Suporte completo para múltiplas empresas com alternância entre visões individuais e consolidada (Carteira Global)
+- **Persistência Local-First**: Dados salvos automaticamente no localStorage com versionamento e migrações
+- **Controle de Permissões**: Sistema robusto de usuários com roles (admin/viewer) e permissões granulares
+- **Dashboard Analítico**: KPIs em tempo real, projeções de saldo e alertas inteligentes
+- **Gestão Completa de Transações**: Entradas, saídas, transferências e conciliação bancária
+- **Sistema de Orçamentos**: Controle orçamentário com alertas de desvio
+- **Relatórios e Exportação**: Exportação em múltiplos formatos com histórico de backups
 
-### Estado Global com Zustand
-- **Gerenciamento de estado eficiente** com Zustand
-- **Persistência localStorage** com versionamento e migrações automáticas
-- **Seletores otimizados** para performance
-- **Sincronização reativa** entre componentes
+## Tecnologias Utilizadas
 
-### Sistema Financeiro Avançado
-- **Engine de recorrência** com suporte a feriados brasileiros
-- **Transferências entre contas** com controles de integridade
-- **Sistema de orçamentos** com alertas de estouro
-- **Reconciliação bancária** (simulada)
-- **Múltiplos status** de transações (planejado, confirmado, pago, atrasado, etc.)
+### Core
+- **React 18.2.0** - Biblioteca principal para interfaces
+- **Redux Toolkit 2.6.1** - Gerenciamento de estado robusto e performático
+- **React Redux 9.2.0** - Bindings oficiais Redux para React
+- **Vite 5.0.0** - Build tool e dev server ultra-rápido
 
-### Relatórios e Exportação
-- **Exportação PDF** com gráficos e tabelas formatadas
-- **Exportação Excel/CSV** com múltiplas abas
-- **DRE simplificado** (visão caixa)
-- **Agendamento de relatórios** com histórico
-- **Previsões financeiras** até 10 anos
+### UI & Styling
+- **Tailwind CSS 3.4.6** - Framework CSS utility-first
+- **Framer Motion 10.16.4** - Animações fluidas e interações
+- **Lucide React 0.484.0** - Ícones SVG modernos e consistentes
+- **Recharts 2.15.2** - Gráficos e visualizações de dados
 
-### UX/UI e Acessibilidade
-- **Tema claro/escuro** com transições suaves
-- **Paleta de cores personalizável** com validação de contraste
-- **Densidade ajustável** (compacto/confortável)
-- **Acessibilidade WCAG AAA** (alto contraste, texto grande, reduced motion)
-- **Virtualização de listas** para performance
+### Funcionalidades
+- **date-fns 4.1.0** - Manipulação de datas com localização brasileira
+- **React Hook Form 7.55.0** - Formulários performáticos com validação
+- **React Router DOM 6.0.2** - Roteamento client-side
 
-## 🛠️ Tecnologias
+## Arquitetura Redux
 
-- **React 18.2** com Hooks funcionais
-- **Vite** para build e desenvolvimento
-- **Tailwind CSS 3.x** com design system personalizado
-- **Zustand** para gerenciamento de estado
-- **Zod** para validação de dados
-- **date-fns** para manipulação de datas
-- **Recharts** para visualizações
-- **jsPDF + jsPDF-autotable** para geração de PDFs
-- **xlsx** para exportação Excel
-- **react-window** para virtualização
-- **Lucide React** para ícones
-
-## 📁 Estrutura do Projeto
+### Estrutura de Slices
 
 ```
-src/
-├── state/                    # Gerenciamento de Estado
-│   ├── store.js             # Store principal Zustand
-│   ├── types.js             # Definições de tipos (JSDoc)
-│   ├── seed.js              # Dados iniciais (2 empresas + transações)
-│   └── persistence.js       # Persistência localStorage com migrações
-├── utils/                    # Utilitários
-│   ├── validation.js        # Validação Zod + formatadores
-│   ├── brazilian-holidays.js # Feriados brasileiros + dias úteis
-│   ├── theme-manager.js     # Gerenciamento de temas e acessibilidade
-│   └── export-utils.js      # Exportação PDF/Excel/CSV
-├── components/ui/            # Componentes UI base
-│   ├── CompanySwitcher.jsx  # Seletor de empresas + Carteira Global
-│   ├── AlertsIndicator.jsx  # Indicador de alertas no header
-│   └── UserProfileMenu.jsx  # Menu do perfil do usuário
-├── pages/                    # Páginas da aplicação
-│   ├── overview-dashboard/   # Dashboard principal
-│   ├── transaction-management/ # Gestão de transações
-│   ├── analytics-forecasting/ # Analytics e previsões
-│   ├── company-account-settings/ # Configurações completas
-│   └── reports-center/       # Centro de relatórios
-└── styles/                   # Estilos globais
-    └── tailwind.css         # Tema com tokens CSS customizáveis
+src/store/
+├── store.js              # Configuração principal do store
+├── persistence.js        # Gerenciamento de localStorage e migrações
+├── seed.js              # Dados iniciais e mock data
+├── selectors.js         # Seletores memoizados para performance
+└── slices/
+    ├── companiesSlice.js      # Gestão de empresas
+    ├── accountsSlice.js       # Contas bancárias
+    ├── categoriesSlice.js     # Categorias de receitas/despesas
+    ├── vendorsCustomersSlice.js # Fornecedores e clientes
+    ├── costCentersSlice.js    # Centros de custo
+    ├── transactionsSlice.js   # Transações financeiras
+    ├── budgetsSlice.js        # Orçamentos
+    ├── settingsSlice.js       # Configurações globais
+    ├── usersSlice.js          # Usuários e permissões
+    └── alertsSlice.js         # Sistema de alertas
 ```
 
-## 🏃‍♂️ Como Executar
+### Persistência & Backups
+
+#### Versionamento de Dados
+- **Versão Atual**: `cfp:v1`
+- **Migrações Automáticas**: Sistema de migrations para compatibilidade entre versões
+- **Backup Multi-nível**: Global, por empresa e dados essenciais
+
+#### Funcionalidades de Persistência
+- **Auto-save**: Debounced (500ms) com requestIdleCallback para performance
+- **Cross-tab Sync**: Sincronização automática entre abas do navegador
+- **Recovery**: Sistema robusto de recuperação em caso de falhas
+- **Export/Import**: JSON estruturado com validação de integridade
+
+### Global Wallet (Carteira Global)
+
+Sistema de consolidação multi-empresa:
+
+```javascript
+// Seletores para visão consolidada
+selectScopedCompanies()    // Empresas ativas no escopo atual
+selectScopedAccounts()     // Contas do escopo (individual/global)
+selectScopedTransactions() // Transações filtradas por escopo
+selectConsolidatedKPIs()   // KPIs consolidados (exclui transfers)
+```
+
+### Memoização e Performance
+
+Utilização extensiva de `createSelector` do Redux Toolkit para:
+- **Cálculos de KPI** memoizados por dependências
+- **Filtros complexos** com cache automático
+- **Agregações** otimizadas para grandes volumes de dados
+- **Seletores derivados** para evitar re-renders desnecessários
+
+## Sistema de Transações
+
+### Tipos Suportados
+- **Entradas** (`entry`): Receitas e recebimentos
+- **Saídas** (`exit`): Despesas e pagamentos  
+- **Transferências** (`transfer`): Movimentação entre contas (par de transações linkadas)
+
+### Estados do Fluxo
+- **Planejado** (`planned`): Transação futura agendada
+- **Confirmado** (`confirmed`): Transação aprovada, pendente de pagamento
+- **Pago** (`paid`): Transação executada com atualização de saldo
+- **Parcial** (`partially-paid`): Pagamento parcial com saldo remanescente
+- **Atrasado** (`overdue`): Vencimento ultrapassado sem pagamento
+- **Cancelado** (`canceled`): Transação cancelada
+
+### Business Logic
+- **Ajuste Automático**: Datas ajustadas para dias úteis (exclui feriados brasileiros)
+- **Conciliação Bancária**: Matching automático com extratos
+- **Auditoria Completa**: Trilha de modificações com usuário e timestamp
+- **Recorrência** (planned): Sistema para transações recorrentes
+
+## Sistema de Permissões
+
+### Roles
+- **Admin**: Acesso completo a todas as funcionalidades
+- **Viewer**: Apenas visualização com permissões para export e anexos
+
+### Permissões Granulares
+```javascript
+{
+  canViewReports: true,
+  canExportData: true,
+  canViewBudgets: true, 
+  canViewAnalytics: true,
+  canViewSettings: false,
+  canManageCategories: false,
+  canManageVendors: false,
+  canManageCustomers: false,
+  canViewAttachments: true,
+}
+```
+
+### Proteção de Actions
+- **Middleware**: Validação de permissões em todas as mutations
+- **UI Guards**: Componentes condicionais baseados em `selectCanEdit`
+- **Bulk Operations**: Proteção em operações em lote
+
+## Alertas Inteligentes
+
+Sistema automatizado de alertas baseado em regras:
+
+### Tipos de Alerta
+- **Saldo Negativo**: Projeções de saldo negativo em 7 dias
+- **Pagamentos Atrasados**: Transações vencidas não pagas
+- **Orçamento Excedido**: Categorias acima do threshold configurado
+- **Baixo Saldo**: Contas próximas ao limite mínimo
+
+### Configuração
+- **Severidade**: High, Medium, Low com cores e priorização
+- **Auto-dismiss**: Alertas que se resolvem automaticamente
+- **Notificações**: Suporte para email, WhatsApp e webhooks (configurável)
+
+## Instalação e Desenvolvimento
 
 ### Pré-requisitos
-- Node.js 16+ 
+- Node.js 18+
 - npm ou yarn
 
 ### Instalação
-
-1. **Clone o repositório**
 ```bash
+# Clone o repositório
 git clone <repository-url>
 cd cashflow-pro
-```
 
-2. **Instale as dependências**
-```bash
+# Instale dependências
 npm install
-```
 
-3. **Execute o ambiente de desenvolvimento**
-```bash
+# Inicie o servidor de desenvolvimento
 npm start
 ```
 
-4. **Acesse a aplicação**
-```
-http://localhost:3000
-```
-
-### Build para Produção
+### Scripts Disponíveis
 ```bash
-npm run build
+npm start    # Servidor de desenvolvimento (Vite)
+npm build    # Build de produção
+npm serve    # Preview do build de produção
 ```
 
-### Preview da Build
-```bash
-npm run serve
+### Estrutura de Desenvolvimento
+```
+src/
+├── components/          # Componentes reutilizáveis
+│   └── ui/             # Componentes de interface
+├── pages/              # Páginas da aplicação
+│   ├── overview-dashboard/
+│   ├── transaction-management/
+│   ├── analytics-forecasting/
+│   ├── reports-center/
+│   └── company-account-settings/
+├── store/              # Redux store e slices
+├── utils/              # Utilitários e helpers
+└── styles/             # Estilos globais
 ```
 
-## 💾 Dados e Persistência
+## Persistência & Backups
 
-### Dados Iniciais
-O sistema inicializa com:
-- **2 Empresas**: TechSol (CNPJ: 12.345.678/0001-90) e ConsBrasil (CNPJ: 98.765.432/0001-10)
-- **3 Contas Bancárias**: BB e Itaú para TechSol, Santander para ConsBrasil
-- **30+ Transações** distribuídas nos últimos 90 dias
-- **Categorias SEBRAE** pré-configuradas
-- **2 Usuários**: Admin e Visualizador
+### Configuração Automática
+- **Auto-save**: Ativado por padrão com debounce de 500ms
+- **Validação**: Verificação de integridade em cada operação de salvamento
+- **Recovery**: Dados essenciais como fallback em caso de corrupção
 
-### Local Storage
-Os dados são persistidos em `localStorage` com as seguintes chaves:
-- `cashflow_app_global` - Dados completos do sistema
-- `cashflow_app_company-1` - Backup da empresa 1
-- `cashflow_app_company-2` - Backup da empresa 2
-- `cashflow_theme` - Preferências de tema
-- `cashflow_colors` - Paleta de cores customizada
-- `cashflow_accessibility` - Configurações de acessibilidade
+### Backup Manual
+```javascript
+// Export de dados por empresa
+const exportData = (companyId) => dispatch(exportData(companyId));
 
-### Backup e Restore
-- **Backup automático** a cada alteração
-- **Exportação JSON** por empresa ou global
-- **Importação JSON** com validação de estrutura
-- **Versionamento** com migrações automáticas
+// Import com validação
+const importData = (jsonData) => dispatch(importData(jsonData));
 
-## 🎨 Configurações e Personalizações
+// Limpar storage (desenvolvimento)
+clearStorageData();
+```
 
-### Sistema de Temas
-- **3 modos**: Claro, Escuro, Automático (segue sistema)
-- **Cores personalizáveis**: Primary, Secondary, Accent, Success, Warning, Error
-- **Validação de contraste** WCAG AAA automática
-- **Densidade de UI**: Compacto ou Confortável
+### Resetar Storage (Desenvolvimento)
+Para resetar completamente os dados durante desenvolvimento:
+```javascript
+// No console do navegador
+localStorage.clear();
+// ou especificamente
+Object.keys(localStorage).forEach(key => {
+  if (key.startsWith('cfp:')) localStorage.removeItem(key);
+});
+```
 
-### Acessibilidade
-- **Alto contraste** para usuários com deficiência visual
-- **Texto grande** para melhor legibilidade
-- **Reduced motion** para usuários sensíveis a animações
-- **Focus indicators** visíveis para navegação por teclado
-- **ARIA labels** em todos os elementos interativos
+## Roadmap
 
-### Configurações Disponíveis
+### Próximas Funcionalidades
+- [ ] **Recorrência Automática**: Geração automática de transações recorrentes
+- [ ] **Anexos Reais**: Upload e gestão de comprovantes
+- [ ] **Relatórios PDF/XLSX**: Exportação avançada além do JSON atual
+- [ ] **API Integration**: Conectores para bancos e sistemas contábeis
+- [ ] **Mobile PWA**: Progressive Web App para dispositivos móveis
+- [ ] **Multi-currency**: Suporte a múltiplas moedas
+- [ ] **Advanced Analytics**: ML para previsões e insights
 
-#### 1. Perfil da Empresa
-- CNPJ, Razão Social, Nome Fantasia
-- Endereço completo, E-mail, Telefone
-- Upload de logotipo (base64)
+### Melhorias de Performance
+- [ ] **Virtual Scrolling**: Para tabelas com grandes volumes de dados  
+- [ ] **Service Workers**: Cache inteligente e sincronização offline
+- [ ] **Lazy Loading**: Carregamento sob demanda de componentes pesados
+- [ ] **Database Integration**: Migração para banco de dados real (opcional)
 
-#### 2. Contas Bancárias
-- CRUD completo de contas
-- Metas de saldo com indicadores visuais
-- Flags PIX/Boleto/Reconciliação
+## Contribuição
 
-#### 3. Categorias e Taxonomia
-- Árvore hierárquica editável
-- Presets SEBRAE/Contábil
-- Busca e filtros avançados
-- Arquivamento (soft delete)
+### Padrões de Código
+- **ESLint**: Configuração React/TypeScript
+- **Prettier**: Formatação automática
+- **Conventional Commits**: Padrão de mensagens de commit
+- **Component Structure**: Functional components com hooks
 
-#### 4. Usuários e Permissões
-- Roles: Administrador e Visualizador
-- Matrix de permissões extensíveis para visualizador
-- Auditoria de último login
-- Controles de acesso granulares
+### Guidelines
+1. **Redux**: Sempre use selectors para acessar o state
+2. **Memoization**: Prefira `createSelector` para computações complexas  
+3. **Optional Chaining**: Obrigatório para propriedades aninhadas (`data?.property?.nested`)
+4. **Error Handling**: Try-catch em todas as operações assíncronas
+5. **Accessibility**: Componentes devem suportar navegação por teclado
 
-#### 5. Preferências do Sistema
-- **Tema**: Claro/Escuro/Automático
-- **Paleta de cores** editável
-- **Densidade**: Compacto/Confortável
-- **Idioma**: PT-BR (configurável para futuras expansões)
-- **Notificações**: E-mail, WhatsApp (webhook n8n)
-- **Acessibilidade**: Alto contraste, texto grande, reduced motion
-- **Backup & Restore**: Exportar/Importar JSON
+## Licença
 
-## 💰 Funcionalidades Financeiras
-
-### Transações
-- **CRUD completo** com validação Zod
-- **Engine de recorrência**: diário, semanal, mensal, trimestral, semestral, anual
-- **Feriados brasileiros**: Automove vencimentos para próximo dia útil
-- **Status granulares**: Planejado, Confirmado, Pago, Atrasado, Cancelado, Parcialmente Pago
-- **Transferências**: Cria 2 lançamentos vinculados automaticamente
-- **Anexos**: Até 10MB por arquivo (base64 storage)
-- **Reconciliação**: Marca como reconciliado quando pago
-- **Importação**: Modal para colar dados CSV-like
-
-### Orçamentos
-- **Orçamento por categoria e mês**
-- **Valores fixos ou crescimento variável**
-- **Alertas de estouro** configuráveis (%)
-- **Comparação realizado vs planejado**
-
-### KPIs e Dashboard
-- **Saldo Bruto** consolidado por conta
-- **Entradas vs Saídas** (mês/período customizável)
-- **Fluxo de Caixa Líquido**
-- **Runway** (quantos meses de operação)
-- **Taxa de Queima** (burn rate)
-- **Top 5 Categorias e Fornecedores**
-- **Aderência Orçamento vs Realizado**
-- **Carteira Global**: Soma todas as empresas
-
-### Tax KPI - Simples Nacional
-- **Regime configurável**: Simples Nacional Anexo IV padrão
-- **Cálculo automático**: 17,55% sobre faturamento do mês anterior
-- **Data de vencimento**: Fim do mês
-- **Editável** para regimes personalizados
-
-### Previsões e Alertas
-- **3 Modos de Previsão**:
-  1. **Determinístico**: Recorrentes + planejados
-  2. **Histórico**: Média móvel com sazonalidade (12 meses)
-  3. **Premissas**: Crescimento % por categoria
-- **Horizonte**: 6m, 12m, 24m, 5y, **10y**
-- **Alertas Proativos**:
-  - Saldo projetado negativo em X dias (padrão 7)
-  - Vencimentos próximos/atrasados
-  - Orçamento estourado
-  - Metas atingidas
-
-### Centro de Relatórios
-- **Exportação PDF**: Com logotipo, gráficos e tabelas formatadas
-- **Exportação Excel**: Múltiplas abas (transações, contas, categorias, DRE, previsão)
-- **DRE Gerencial**: Visão caixa simplificada
-- **Agendamento**: Daily/Weekly/Monthly/Quarterly/Yearly
-- **Histórico**: Re-download de relatórios anteriores
-- **Destinatários**: Lista de e-mails (integração n8n webhook)
-
-## 🔒 Segurança e Permissões
-
-### Controle de Acesso
-- **Role-based access control** (RBAC)
-- **Administrador**: Acesso total
-- **Visualizador**: Somente leitura + extensões opcionais
-- **Extensões para Visualizador**:
-  - Exportação de dados
-  - Gestão de categorias
-  - Gestão de fornecedores/clientes
-- **NUNCA permite**: Criar/Editar/Excluir para visualizador
-
-### Auditoria
-- **Audit trail** em transações (createdBy, updatedBy)
-- **Registro de último login**
-- **Histórico de alterações** (futuro)
-
-## 📊 Performance e UX
-
-### Otimizações
-- **Virtualização de tabelas** (react-window) para +200 itens
-- **Debounce** (250ms) em filtros de busca
-- **Memoização** de seletores Zustand
-- **Code splitting** por rota
-- **Lazy loading** de componentes pesados
-
-### Experiência do Usuário
-- **Kinvo-style UX** mantido
-- **Micro-feedbacks** em interações
-- **Loading states** em operações assíncronas
-- **Toast notifications** para ações
-- **Drill-downs** clicáveis nos KPIs
-- **Filtros persistentes** por usuário
-
-## 🌐 Futuras Integrações
-
-### Preparado para:
-- **API Backend** (estrutura de estado compatível)
-- **Notificações Reais**: E-mail via webhook n8n
-- **Open Banking**: Integração bancária real
-- **Multi-idiomas**: i18n structure ready
-- **PWA**: Service worker e offline capability
-
-## 📋 Validação e Testes
-
-### Critérios de Aceitação ✅
-
-1. **Seed carrega** com 2 CNPJs, 3 contas, 30 transações
-2. **Company switching** atualiza todas as páginas
-3. **Carteira Global** soma dados de ambas as empresas  
-4. **Permissões funcionam**: Viewer = read-only, Admin = full CRUD
-5. **Recorrência mensal** gera 12x com término por parcelas
-6. **Feriados empurram** vencimentos para dias úteis
-7. **Transferências** criam 2 lançamentos vinculados
-8. **Dashboard** mostra todos os KPIs e drill-downs
-9. **Tax KPI** calcula 17,55% do faturamento anterior
-10. **Forecast 10 anos** alterna entre 3 modos
-11. **Alertas** aparecem quando aplicáveis
-12. **Relatórios** exportam PDF/Excel/CSV corretamente
-13. **Agendamentos** salvam e persistem após reload
-14. **Preferências** (tema/cores/densidade) persistem
-15. **Backup/Restore** funciona completamente
-16. **Tabelas grandes** permanecem suaves (virtualização)
-17. **Filtros persistem** por usuário
-
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
-
-## 📞 Suporte
-
-Para dúvidas ou suporte:
-- Abra uma [Issue](../../issues)
-- Contate o time de desenvolvimento
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
 
 ---
 
-**Desenvolvido com ❤️ para gestão financeira eficiente**
+**CashFlow Pro** - Sistema completo de gestão financeira com persistência local, multi-empresa e controle avançado de permissões. Construído para escalar desde pequenas empresas até operações multi-corporativas complexas.

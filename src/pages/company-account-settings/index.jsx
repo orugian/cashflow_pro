@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useSearchParams } from 'react-router-dom';
 import NavigationSidebar from '../../components/ui/NavigationSidebar';
 import Header from '../../components/ui/Header';
 import SettingsNavigation from './components/SettingsNavigation';
@@ -7,97 +9,59 @@ import BankAccountsSection from './components/BankAccountsSection';
 import CategoriesSection from './components/CategoriesSection';
 import UsersPermissionsSection from './components/UsersPermissionsSection';
 import SystemPreferencesSection from './components/SystemPreferencesSection';
+import {
+  selectSettings,
+  selectCanEdit,
+  selectCurrentUser,
+} from '../../store/selectors';
 
 const CompanyAccountSettings = () => {
+  const dispatch = useDispatch();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeSection, setActiveSection] = useState('company-profile');
+  
+  // Redux selectors
+  const settings = useSelector(selectSettings);
+  const canEdit = useSelector(selectCanEdit);
+  const currentUser = useSelector(selectCurrentUser);
+  
+  // Get active tab from URL params
+  const activeTab = searchParams?.get('tab') || 'company';
 
   const handleToggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
+  const handleTabChange = (tab) => {
+    setSearchParams({ tab });
+  };
+
+  const settingsNavItems = [
+    { id: 'company', label: 'Perfil da Empresa', icon: 'Building2' },
+    { id: 'accounts', label: 'Contas Bancárias', icon: 'CreditCard' },
+    { id: 'categories', label: 'Categorias', icon: 'Tags' },
+    { id: 'users', label: 'Usuários e Permissões', icon: 'Users' },
+    { id: 'system', label: 'Preferências', icon: 'Settings' },
+    { id: 'tax', label: 'Impostos', icon: 'Receipt' },
+    { id: 'backup', label: 'Backup e Exportação', icon: 'Download' },
+  ];
+
   const renderActiveSection = () => {
-    switch (activeSection) {
-      case 'company-profile':
+    switch (activeTab) {
+      case 'company':
         return <CompanyProfileSection />;
-      case 'bank-accounts':
+      case 'accounts':
         return <BankAccountsSection />;
       case 'categories':
         return <CategoriesSection />;
-      case 'vendors-customers':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-xl font-semibold text-foreground">Fornecedores & Clientes</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Gerencie seu cadastro de parceiros comerciais
-              </p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-12 text-center">
-              <p className="text-muted-foreground">Seção em desenvolvimento</p>
-            </div>
-          </div>
-        );
-      case 'cost-centers':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-xl font-semibold text-foreground">Centros de Custo</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Configure projetos e alocação de custos
-              </p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-12 text-center">
-              <p className="text-muted-foreground">Seção em desenvolvimento</p>
-            </div>
-          </div>
-        );
-      case 'budgets':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-xl font-semibold text-foreground">Orçamentos</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Planejamento financeiro mensal por categoria
-              </p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-12 text-center">
-              <p className="text-muted-foreground">Seção em desenvolvimento</p>
-            </div>
-          </div>
-        );
-      case 'users-permissions':
+      case 'users':
         return <UsersPermissionsSection />;
-      case 'alerts':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-xl font-semibold text-foreground">Alertas</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Configure notificações e lembretes
-              </p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-12 text-center">
-              <p className="text-muted-foreground">Seção em desenvolvimento</p>
-            </div>
-          </div>
-        );
-      case 'tax-configuration':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-xl font-semibold text-foreground">Configuração Fiscal</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Simples Nacional e configurações tributárias
-              </p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-12 text-center">
-              <p className="text-muted-foreground">Seção em desenvolvimento</p>
-            </div>
-          </div>
-        );
-      case 'system-preferences':
+      case 'system':
         return <SystemPreferencesSection />;
+      case 'tax':
+        return <SystemPreferencesSection activeSubSection="tax" />;
+      case 'backup':
+        return <SystemPreferencesSection activeSubSection="backup" />;
       default:
         return <CompanyProfileSection />;
     }
@@ -110,29 +74,42 @@ const CompanyAccountSettings = () => {
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={handleToggleSidebar}
       />
-
+      
       {/* Header */}
       <Header 
         sidebarCollapsed={sidebarCollapsed}
         onToggleSidebar={handleToggleSidebar}
       />
-
+      
       {/* Main Content */}
       <main className={`
         transition-all duration-300 ease-smooth
         ${sidebarCollapsed ? 'ml-16' : 'ml-60'}
-        mt-16 min-h-[calc(100vh-4rem)]
+        mt-16 p-6
       `}>
-        <div className="flex h-full">
-          {/* Settings Navigation */}
-          <SettingsNavigation 
-            activeSection={activeSection}
-            onSectionChange={setActiveSection}
-          />
+        <div className="max-w-7xl mx-auto">
+          {/* Page Header */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold text-foreground mb-2">
+              Configurações
+            </h1>
+            <p className="text-muted-foreground">
+              Gerencie perfil da empresa, contas, categorias e preferências do sistema
+            </p>
+          </div>
 
-          {/* Content Area */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Settings Navigation */}
+            <div className="lg:col-span-1">
+              <SettingsNavigation
+                activeSection={activeTab}
+                onSectionChange={handleTabChange}
+                navItems={settingsNavItems}
+              />
+            </div>
+
+            {/* Settings Content */}
+            <div className="lg:col-span-3">
               {renderActiveSection()}
             </div>
           </div>

@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { Checkbox } from '../../../components/ui/Checkbox';
+import { 
+  selectCategories, 
+  selectVendors, 
+  selectCustomers, 
+  selectScopedAccounts,
+} from '../../../store/selectors';
 
 const TransactionTable = ({ 
   transactions, 
@@ -15,6 +22,35 @@ const TransactionTable = ({
   onSort
 }) => {
   const [hoveredRow, setHoveredRow] = useState(null);
+  
+  // Redux selectors to get related data
+  const categories = useSelector(selectCategories);
+  const vendors = useSelector(selectVendors);
+  const customers = useSelector(selectCustomers);
+  const accounts = useSelector(selectScopedAccounts);
+
+  // Helper functions to get names from IDs
+  const getCategoryName = (categoryId) => {
+    const category = categories?.find(c => c?.id === categoryId);
+    return category?.name || 'N/A';
+  };
+
+  const getVendorName = (vendorId) => {
+    if (!vendorId) return 'N/A';
+    const vendor = vendors?.find(v => v?.id === vendorId);
+    return vendor?.name || 'N/A';
+  };
+
+  const getCustomerName = (customerId) => {
+    if (!customerId) return 'N/A';
+    const customer = customers?.find(c => c?.id === customerId);
+    return customer?.name || 'N/A';
+  };
+
+  const getAccountName = (accountId) => {
+    const account = accounts?.find(a => a?.id === accountId);
+    return account ? `${account?.bank} ${account?.number}` : 'N/A';
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -62,6 +98,7 @@ const TransactionTable = ({
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString)?.toLocaleDateString('pt-BR');
   };
 
@@ -209,9 +246,9 @@ const TransactionTable = ({
                   <td className="p-4">
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-foreground">
-                        {formatDate(transaction?.date)}
+                        {formatDate(transaction?.competenciaDate)}
                       </span>
-                      {transaction?.dueDate && transaction?.dueDate !== transaction?.date && (
+                      {transaction?.dueDate && transaction?.dueDate !== transaction?.competenciaDate && (
                         <span className="text-xs text-muted-foreground">
                           Venc: {formatDate(transaction?.dueDate)}
                         </span>
@@ -221,7 +258,7 @@ const TransactionTable = ({
                   <td className="p-4">
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-foreground">
-                        {transaction?.description}
+                        {transaction?.description || 'N/A'}
                       </span>
                       {transaction?.notes && (
                         <span className="text-xs text-muted-foreground truncate max-w-48">
@@ -232,23 +269,28 @@ const TransactionTable = ({
                   </td>
                   <td className="p-4">
                     <span className="text-sm text-foreground">
-                      {transaction?.category}
+                      {getCategoryName(transaction?.categoryId)}
                     </span>
                   </td>
                   <td className="p-4">
                     <span className="text-sm text-foreground">
-                      {transaction?.vendor}
+                      {transaction?.vendorId 
+                        ? getVendorName(transaction?.vendorId)
+                        : transaction?.customerId 
+                          ? getCustomerName(transaction?.customerId)
+                          : 'N/A'
+                      }
                     </span>
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex flex-col items-end">
                       <span className={`text-sm font-semibold ${
-                        transaction?.type === 'income' ? 'text-success' : 'text-error'
+                        transaction?.type === 'entry' ? 'text-success' : 'text-error'
                       }`}>
-                        {transaction?.type === 'income' ? '+' : '-'}{formatCurrency(transaction?.amount)}
+                        {transaction?.type === 'entry' ? '+' : '-'}{formatCurrency(transaction?.amount || 0)}
                       </span>
                       {transaction?.paymentMethod && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground capitalize">
                           {transaction?.paymentMethod}
                         </span>
                       )}
@@ -264,7 +306,7 @@ const TransactionTable = ({
                   </td>
                   <td className="p-4">
                     <span className="text-sm text-foreground">
-                      {transaction?.account}
+                      {getAccountName(transaction?.accountId)}
                     </span>
                   </td>
                   <td className="p-4">
@@ -313,6 +355,7 @@ const TransactionTable = ({
           </tbody>
         </table>
       </div>
+      
       {/* Empty State */}
       {transactions?.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 px-4">

@@ -1,107 +1,89 @@
-import React, { useState } from 'react';
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
-
-
+import React, { useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { format, addMonths } from 'date-fns';
+import { 
+  selectScopedTransactions, 
+  selectScopedAccounts, 
+  selectActiveScope,
+} from '../../../store/selectors';
 
 const ProjectedBalanceChart = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState('12m');
-  const [selectedScenario, setSelectedScenario] = useState('base');
+  const scopedTransactions = useSelector(selectScopedTransactions);
+  const scopedAccounts = useSelector(selectScopedAccounts);
+  const activeScope = useSelector(selectActiveScope);
 
-  const periodOptions = [
-    { value: 'ytd', label: 'YTD' },
-    { value: '12m', label: '12 meses' },
-    { value: '24m', label: '24 meses' },
-    { value: '5y', label: '5 anos' },
-    { value: '10y', label: '10 anos' }
-  ];
+  // Calculate current balance
+  const currentBalance = useMemo(() => {
+    return scopedAccounts?.reduce((sum, account) => sum + (account?.currentBalance || 0), 0) || 0;
+  }, [scopedAccounts]);
 
-  const scenarioOptions = [
-    { value: 'pessimistic', label: 'Pessimista', color: '#DC2626' },
-    { value: 'base', label: 'Base', color: '#1E3A8A' },
-    { value: 'optimistic', label: 'Otimista', color: '#059669' }
-  ];
-
-  // Mock data for different periods
-  const generateChartData = (period, scenario) => {
-    const baseData = {
-      'ytd': [
-        { month: 'Jan', actual: 45000, projected: null },
-        { month: 'Fev', actual: 52000, projected: null },
-        { month: 'Mar', actual: 48000, projected: null },
-        { month: 'Abr', actual: 61000, projected: null },
-        { month: 'Mai', actual: 55000, projected: null },
-        { month: 'Jun', actual: 67000, projected: null },
-        { month: 'Jul', actual: 72000, projected: null },
-        { month: 'Ago', actual: 68000, projected: 70000 },
-        { month: 'Set', actual: null, projected: 75000 },
-        { month: 'Out', actual: null, projected: 78000 },
-        { month: 'Nov', actual: null, projected: 82000 },
-        { month: 'Dez', actual: null, projected: 85000 }
-      ],
-      '12m': [
-        { month: 'Ago/24', actual: 45000, projected: null },
-        { month: 'Set/24', actual: 52000, projected: null },
-        { month: 'Out/24', actual: 48000, projected: null },
-        { month: 'Nov/24', actual: 61000, projected: null },
-        { month: 'Dez/24', actual: 55000, projected: null },
-        { month: 'Jan/25', actual: 67000, projected: null },
-        { month: 'Fev/25', actual: 72000, projected: null },
-        { month: 'Mar/25', actual: 68000, projected: null },
-        { month: 'Abr/25', actual: 75000, projected: null },
-        { month: 'Mai/25', actual: 78000, projected: null },
-        { month: 'Jun/25', actual: 82000, projected: null },
-        { month: 'Jul/25', actual: 85000, projected: null },
-        { month: 'Ago/25', actual: null, projected: 88000 }
-      ]
-    };
-
-    const multipliers = {
-      pessimistic: 0.85,
-      base: 1.0,
-      optimistic: 1.15
-    };
-
-    const data = baseData?.[period] || baseData?.['12m'];
-    const multiplier = multipliers?.[scenario];
-
-    return data?.map(item => ({
-      ...item,
-      projected: item?.projected ? Math.round(item?.projected * multiplier) : null
-    }));
-  };
-
-  const chartData = generateChartData(selectedPeriod, selectedScenario);
-  const currentScenario = scenarioOptions?.find(s => s?.value === selectedScenario);
+  // Generate projected balance data for up to 10 years
+  const chartData = useMemo(() => {
+    const data = [];
+    const startDate = new Date();
+    const endDate = addMonths(startDate, 120); // 10 years
+    let runningBalance = currentBalance;
+    
+    // Create monthly buckets
+    let currentDate = startDate;
+    while (currentDate <= endDate) {
+      const monthKey = format(currentDate, 'yyyy-MM');
+      
+      // Get confirmed and planned transactions for this month
+      const monthTransactions = scopedTransactions?.filter(transaction => {
+        const transactionDate = new Date(transaction?.competenciaDate || transaction?.dueDate);
+        return format(transactionDate, 'yyyy-MM') === monthKey &&
+               (transaction?.status === 'confirmed' || transaction?.status === 'paid');
+      }) || [];
+      
+      // Calculate net change for the month (excluding transfers)
+      const monthlyChange = // Exclude transfers from projections
+      monthTransactions?.filter(t => !t?.transferPairId)?.reduce((sum, transaction) => {
+          const multiplier = transaction?.type === 'entry' ? 1 : -1;
+          return sum + (transaction?.amount * multiplier);
+        }, 0);
+      
+      runningBalance += monthlyChange;
+      
+      data?.push({
+        month: format(currentDate, 'MMM yyyy'),
+        monthShort: format(currentDate, 'MMM/yy'),
+        balance: runningBalance,
+        change: monthlyChange,
+        transactionCount: monthTransactions?.length || 0,
+      });
+      
+      currentDate = addMonths(currentDate, 1);
+    }
+    
+    return data?.slice(0, 24); // Show next 24 months
+  }, [scopedTransactions, currentBalance]);
 
   const formatCurrency = (value) => {
-    if (!value) return '';
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     })?.format(value);
   };
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload?.length) {
+      const data = payload?.[0]?.payload;
       return (
-        <div className="bg-popover border border-border rounded-lg p-3 shadow-pronounced">
-          <p className="font-medium text-sm text-popover-foreground mb-2">{label}</p>
-          {payload?.map((entry, index) => (
-            <div key={index} className="flex items-center space-x-2">
-              <div 
-                className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: entry?.color }}
-              ></div>
-              <span className="text-sm text-muted-foreground capitalize">
-                {entry?.dataKey === 'actual' ? 'Real' : 'Projetado'}:
-              </span>
-              <span className="text-sm font-medium text-popover-foreground">
-                {formatCurrency(entry?.value)}
-              </span>
-            </div>
-          ))}
+        <div className="bg-card border border-border rounded-lg shadow-lg p-3">
+          <p className="font-medium text-foreground">{label}</p>
+          <p className="text-sm text-primary">
+            Saldo Projetado: {formatCurrency(data?.balance)}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Variação: {data?.change >= 0 ? '+' : ''}{formatCurrency(data?.change)}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {data?.transactionCount} transação(ões)
+          </p>
         </div>
       );
     }
@@ -109,132 +91,79 @@ const ProjectedBalanceChart = () => {
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 shadow-base">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 space-y-4 lg:space-y-0">
+    <div className="bg-card border border-border rounded-lg shadow-base p-6">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-foreground mb-1">
-            Saldo Projetado
-          </h2>
+          <h3 className="text-lg font-semibold text-foreground">
+            Projeção de Saldo
+          </h3>
           <p className="text-sm text-muted-foreground">
-            Evolução do saldo consolidado - Cenário {currentScenario?.label}
+            {activeScope === 'global' ?'Evolução consolidada dos próximos 24 meses' :'Evolução do saldo nos próximos 24 meses'
+            }
           </p>
         </div>
-
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-          {/* Period Selector */}
-          <div className="flex items-center space-x-1 bg-muted rounded-lg p-1">
-            {periodOptions?.map((option) => (
-              <button
-                key={option?.value}
-                onClick={() => setSelectedPeriod(option?.value)}
-                className={`
-                  px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200
-                  ${selectedPeriod === option?.value
-                    ? 'bg-primary text-primary-foreground shadow-base'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-background'
-                  }
-                `}
-              >
-                {option?.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Scenario Selector */}
-          <div className="flex items-center space-x-1 bg-muted rounded-lg p-1">
-            {scenarioOptions?.map((option) => (
-              <button
-                key={option?.value}
-                onClick={() => setSelectedScenario(option?.value)}
-                className={`
-                  px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200
-                  ${selectedScenario === option?.value
-                    ? 'bg-card text-foreground shadow-base border border-border'
-                    : 'text-muted-foreground hover:text-foreground'
-                  }
-                `}
-              >
-                <div className="flex items-center space-x-1">
-                  <div 
-                    className="w-2 h-2 rounded-full" 
-                    style={{ backgroundColor: option?.color }}
-                  ></div>
-                  <span>{option?.label}</span>
-                </div>
-              </button>
-            ))}
-          </div>
+        <div className="text-right">
+          <p className="text-2xl font-bold text-foreground">
+            {formatCurrency(currentBalance)}
+          </p>
+          <p className="text-sm text-muted-foreground">Saldo Atual</p>
         </div>
       </div>
-      {/* Chart */}
-      <div className="w-full h-80" aria-label="Gráfico de Saldo Projetado">
+      <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 20, bottom: 5 }}>
             <defs>
-              <linearGradient id="actualGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#1E3A8A" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#1E3A8A" stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="projectedGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={currentScenario?.color} stopOpacity={0.2}/>
-                <stop offset="95%" stopColor={currentScenario?.color} stopOpacity={0}/>
+              <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="rgb(59, 130, 246)" stopOpacity={0.1}/>
+                <stop offset="95%" stopColor="rgb(59, 130, 246)" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
             <XAxis 
-              dataKey="month" 
-              stroke="var(--color-text-secondary)"
-              fontSize={12}
-              tickLine={false}
+              dataKey="monthShort" 
               axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: 'var(--color-muted-foreground)' }}
+              interval="preserveStartEnd"
             />
             <YAxis 
-              stroke="var(--color-text-secondary)"
-              fontSize={12}
-              tickLine={false}
               axisLine={false}
-              tickFormatter={formatCurrency}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: 'var(--color-muted-foreground)' }}
+              tickFormatter={(value) => {
+                if (value >= 1000000) return `${(value / 1000000)?.toFixed(1)}M`;
+                if (value >= 1000) return `${(value / 1000)?.toFixed(0)}k`;
+                return value?.toLocaleString('pt-BR');
+              }}
             />
             <Tooltip content={<CustomTooltip />} />
-            
-            {/* Actual Balance Area */}
             <Area
               type="monotone"
-              dataKey="actual"
-              stroke="#1E3A8A"
-              strokeWidth={3}
-              fill="url(#actualGradient)"
-              connectNulls={false}
-            />
-            
-            {/* Projected Balance Area */}
-            <Area
-              type="monotone"
-              dataKey="projected"
-              stroke={currentScenario?.color}
+              dataKey="balance"
+              stroke="rgb(59, 130, 246)"
               strokeWidth={2}
-              strokeDasharray="5 5"
-              fill="url(#projectedGradient)"
-              connectNulls={false}
+              fill="url(#balanceGradient)"
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="balance"
+              stroke="rgb(59, 130, 246)"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, fill: "rgb(59, 130, 246)" }}
             />
           </AreaChart>
         </ResponsiveContainer>
       </div>
       {/* Legend */}
-      <div className="flex items-center justify-center space-x-6 mt-4 pt-4 border-t border-border">
+      <div className="flex items-center justify-center mt-4 space-x-6 text-sm">
         <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-primary rounded-full"></div>
-          <span className="text-sm text-muted-foreground">Saldo Real</span>
+          <div className="w-3 h-3 rounded-full bg-primary"></div>
+          <span className="text-muted-foreground">Saldo Projetado</span>
         </div>
-        <div className="flex items-center space-x-2">
-          <div 
-            className="w-3 h-3 rounded-full border-2 border-dashed"
-            style={{ borderColor: currentScenario?.color }}
-          ></div>
-          <span className="text-sm text-muted-foreground">
-            Projeção {currentScenario?.label}
-          </span>
+        <div className="text-xs text-muted-foreground">
+          * Baseado em transações confirmadas e planejadas
         </div>
       </div>
     </div>
